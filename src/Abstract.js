@@ -1,8 +1,8 @@
+import { Channel } from './structures/Channel.js';
 import Debug from './util/debugger.js';
-import routes from './util/discord_api_routes'
 
 export class Abstract extends Map {
-  constructor(client, opt = {}) {
+  constructor(client, routes /* if the user want a custom of routes */) {
     super()
     
     Object.defineProperties(this, {
@@ -11,6 +11,9 @@ export class Abstract extends Map {
       },
       _debug: {
         value: (new Debug('Abstract', client)).debug
+      },
+      routes: {
+        value: routes
       }
     })
     
@@ -19,8 +22,9 @@ export class Abstract extends Map {
   
   // map method
   get(key) {
-    return super.get(key)
-  }
+    const res = super.get(key)
+    if(res._type === 'channel') return new Channel(this.clienet, res)
+  } 
   
   
   set(key, value) {
@@ -46,9 +50,9 @@ export class Abstract extends Map {
   
   
   /**
-  * filter a cache.
+  * filter an Abstract.
   * @param {Function} fn function to filter
-  * @returns {Cache} Cache class
+  * @returns {Abstract} Abstract class
   */
   filter(fn) {
     if(typeof(fn) !== 'function') throw new Error('Supplied parameter is not a function')
@@ -93,14 +97,14 @@ export class Abstract extends Map {
   /**
   * fetches something from pre-defined path.
   * @param {String} snowflake a snowflake that identify something
-  * @returns {Promise<Any>} resolves with data, or rejects with an instance of Error
+  * @returns {Promise<any>} resolves with data, or rejects with an instance of Error
   */
-  async fetch(snowflake, dataType = 'generic') {
+  async fetch(snowflake, option) {
     try {
-      const data = await this.client.api.get(routes[dataType] + snowflake)
+      const data = await this.client.api.get(this.routes[dataType] + snowflake)
       
       Object.defineProperty(data, '_timestamp', { value: Date.now(), writable: true })
-      Object.defineProperty(data, '_type', { value: dataType })
+      Object.defineProperty(data, '_type', { value: option.dataType })
       super.set(data.id || data.name, data)
       this._debug('fetching success')
       return super.get(data.id || data.name)
@@ -114,15 +118,15 @@ export class Abstract extends Map {
   
   /** 
   * fetches all datas from this url
-  * @returns {Promise<boolean | Error>} resolves with true, or rejects with instance of Error
+  * @returns {Promise<Boolean | Error>} resolves with true, or rejects with instance of Error
   */
-  async fetchAll(dataType = 'generic') {
+  async fetchAll(option) {
     try {
-      const Data = await this.client.api.get(routes[dataType])
+      const Data = await this.client.api.get(this.routes[option.dataType])
       
       Data.forEach(data => {
         Object.defineProperty(data, '_timestamp', { value: Date.now(), writable: true})
-        Object.defineProperty(data, '_type', { value: dataType })
+        Object.defineProperty(data, '_type', { value: option.dataType })
         super.set(data.id || data.name, data)
       })
       this._debug('success fetched all data from the url.')
@@ -150,9 +154,14 @@ export class Abstract extends Map {
   }
 
   getType(type) {
-    const copyOfThis = this
-    copyOfThis.filter(x => x._type === type)
+    const copyOfThis = new Abstract(this.client, this.routes)
+    copyOfThis.setAll([...this.entries()]).filter(t => t === type)
     return copyOfThis
+  }
+
+  setAll(arrayOfData) {
+    arrayOfData.forEach(arr => this.set(arr[0], arr[1]))
+    return this
   }
   
 }

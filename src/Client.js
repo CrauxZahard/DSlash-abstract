@@ -1,21 +1,21 @@
 import clientApi from './util/api'
 import Abstract from './Abstract'
+import routes from './util/discord_api_routes'
+import { startUp } from './util/client_startup'
 
 export class Client {
     constructor(data = {}) {
         clientApi(this)
+
         Object.defineProperty(this, 'abstract', {
-            value: new Abstract(this)
+            value: new Abstract(this, routes)
+        })
+        Object.defineProperty(this, 'token', {
+            value: data.token
         })
         
         // @override
-        this.channels.fetch = (id) => this.abstract.fetch(id, 'channel')
-        this.guilds.fetch = (id) => this.abstract.fetch(id, 'guild')
-        this.users.fetch = (id) => this.abstract.fetch(id, 'user')
-
-        this.channels.fetchAll = () => this.abstract.fetchAll('channel')
-        this.guilds.fetchAll = () => this.abstract.fetchAll('guild')
-        this.users.fetchAll = () => this.abstract.fetchAll('user')
+        startUp(this)
     }
 
     channels() {

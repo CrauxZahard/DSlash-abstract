@@ -5,4 +5,14 @@ export class Message {
             this[k] = v
         }
     }
+
+    async edit(data) {
+        const result = await this.client.api.patch(`https://discord.com/api/v10/channels/${this.channel_id}/messages/${this.id}`, data)
+        return new Message(this.client, result)
+    }
+
+    async delete() {
+        await this.client.api.delete(`https://discord.com/api/v10/channels/${this.channel_id}/messages/${this.id}`)
+        return true
+    }
 }

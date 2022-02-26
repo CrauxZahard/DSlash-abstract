@@ -1,5 +1,6 @@
-import { makeRoute } from "../util/discord_api_routes"
 import { Message } from "./Message"
+import { ROUTES } from "../util/discord_api_routes"
+
 export class Channel {
     constructor(client, rawData) {
         Object.defineProperty(this, 'client', {value: client})
@@ -10,17 +11,80 @@ export class Channel {
     }
 
     async edit(data) {
-        const result = await this.client.api.patch(makeRoute(this.id), data).catch(err => {throw err})
+        const result = await this.client.api.patch(ROUTES.CHANNEL + this.id, data).catch(err => {throw err})
         return new Channel(this.client, result)
     }
 
     async delete() {
-        await this.client.api.delete(makeRoute(this.id, {type: 'channel'}))
+        await this.client.api.delete(ROUTES.CHANNEL + this.id)
         return true
     }
 
     async send(data) {
-        const result = await this.client.api.post(makeRoute(this.id, {target: 'messages', type: 'channel'}), data).catch(err => {throw err})
+        const result = await this.client.api.post(ROUTES.CHANNEL + `${this.id}/messages`, data).catch(err => {throw err})
         return new Message(this.client, result)
+    }
+
+    get threads() {
+        // bro is this code even readable?
+        // nvm just leave this messy code lol
+        return {
+            create: async ({messageId = null, name, type = 11, rate_limit_per_user, auto_archive_duration, invitable}) => {
+                if(messageId === null) {
+                    // starts thread without message
+                    const result = await this.client.api.post(ROUTES.CHANNEL + `${this.id}/threads`, {
+                        name,
+                        auto_archive_duration,
+                        rate_limit_per_user,
+                        type,
+                        invitable
+                    })
+                    return result
+                }
+                // starts thread with message
+                const result = await this.client.api.post(ROUTES.CHANNEL + `${this.id}/messages/${messageId}/threads`, {
+                    name,
+                    auto_archive_duration,
+                    rate_limit_per_user
+                })
+                return result
+            },
+
+            // todo: move this method to Guild class
+            fetchAll: async () => {
+                await this.client.abstract.fetchAll({url: ROUTES.GUILD + `${this.guild_id}/threads/active`, dataType: "thread"})
+                return true
+            },
+
+            fetch: async (id) => {
+                let exists = this.client.abstract.getType('thread').get(id)
+                if(!exists) {
+                    await this.threads.fetchAll()
+                    exists = this.client.abstract.getType('thread').get(id)
+                }
+                return exists
+            },
+
+            archived: {
+                public: async ({limit}) => {
+                    let baseRoute = ROUTES.CHANNEL + `${this.id}/threads/archived/public`
+                    if(limit) baseRoute += `?limit=${limit}`
+                    const result = await this.client.api.get(baseRoute)
+                    return result
+                },
+                private: async ({limit}) => {
+                    let baseRoute = ROUTES.CHANNEL + `${this.id}/threads/archived/private`
+                    if(limit) baseRoute += `?limit=${limit}`
+                    const result = await this.client.api.get(baseRoute)
+                    return result
+                },
+                joined: async ({limit}) => {
+                    let baseRoute = ROUTES.CHANNEL + `${this.id}/users/@me/threads/archived/private`
+                    if(limit) baseRoute += `?limit=${limit}`
+                    const result = await this.client.api.get(baseRoute)
+                    return result
+                }
+            }
+        }
     }
 }

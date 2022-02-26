@@ -1,4 +1,8 @@
 import { Channel } from './structures/Channel.js';
+import { Message } from './structures/Message.js';
+import { Thread } from './structures/Thread.js';
+import { User } from './structures/User.js';
+
 import Debug from './util/debugger.js';
 
 export class Abstract extends Map {
@@ -21,9 +25,9 @@ export class Abstract extends Map {
   }
   
   // map method
-  get(key) {
-    const res = super.get(key)
-    if(res._type === 'channel') return new Channel(this.clienet, res)
+  get(key, shouldTransform = true) {
+    if(shouldTransform === false) return super.get(key)
+    return this.transform(super.get(key))
   } 
   
   
@@ -122,7 +126,7 @@ export class Abstract extends Map {
   */
   async fetchAll(option) {
     try {
-      const Data = await this.client.api.get(this.routes[option.dataType])
+      const Data = await this.client.api.get(option.url)
       
       Data.forEach(data => {
         Object.defineProperty(data, '_timestamp', { value: Date.now(), writable: true})
@@ -155,13 +159,21 @@ export class Abstract extends Map {
 
   getType(type) {
     const copyOfThis = new Abstract(this.client, this.routes)
-    copyOfThis.setAll([...this.entries()]).filter(t => t === type)
+    copyOfThis.setAll(...this.entries()).filter(t => t === type)
     return copyOfThis
   }
 
   setAll(arrayOfData) {
     arrayOfData.forEach(arr => this.set(arr[0], arr[1]))
     return this
+  }
+
+  transform(data) {
+    if(data._type === 'channel') return new Channel(this.client, data)
+    if(data._type === 'message') return new Message(this.client, data)
+    if(data._type === 'user') return new User(this.client, data)
+    if(data._type === 'thread') return new Thread(this.client, data)
+    return super.get(data.id)
   }
   
 }

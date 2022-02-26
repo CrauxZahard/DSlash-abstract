@@ -1,6 +1,6 @@
 import clientApi from './util/api'
 import Abstract from './Abstract'
-import routes from './util/discord_api_routes'
+import {ROUTES} from './util/discord_api_routes'
 import { startUp } from './util/client_startup'
 
 export class Client {
@@ -8,7 +8,7 @@ export class Client {
         clientApi(this)
 
         Object.defineProperty(this, 'abstract', {
-            value: new Abstract(this, routes)
+            value: new Abstract(this, ROUTES)
         })
         Object.defineProperty(this, 'token', {
             value: data.token

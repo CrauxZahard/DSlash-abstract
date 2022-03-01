@@ -105,7 +105,7 @@ export class Abstract extends Map {
   */
   async fetch(snowflake, option) {
     try {
-      const data = await this.client.api.get(this.routes[dataType] + snowflake)
+      const data = await this.client.api.get(option.url || this.routes[dataType] + snowflake)
       
       Object.defineProperty(data, '_timestamp', { value: Date.now(), writable: true })
       Object.defineProperty(data, '_type', { value: option.dataType })
@@ -126,7 +126,7 @@ export class Abstract extends Map {
   */
   async fetchAll(option) {
     try {
-      const Data = await this.client.api.get(option.url)
+      const Data = await this.client.api.get(option.url || this.routes[option.dataType])
       
       Data.forEach(data => {
         Object.defineProperty(data, '_timestamp', { value: Date.now(), writable: true})
@@ -134,7 +134,7 @@ export class Abstract extends Map {
         super.set(data.id || data.name, data)
       })
       this._debug('success fetched all data from the url.')
-      return true
+      return Data.map(d => this.transform(d))
     }
     catch (err) {
       this._debug('an error has occured while fetching all data!.\n' + `Status Code: ${err.statusCode}\nMessage: ${err.message}`)

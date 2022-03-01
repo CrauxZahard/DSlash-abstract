@@ -50,10 +50,9 @@ export class Channel {
                 return result
             },
 
-            // todo: move this method to Guild class
             fetchAll: async () => {
-                await this.client.abstract.fetchAll({url: ROUTES.GUILD + `${this.guild_id}/threads/active`, dataType: "thread"})
-                return true
+                const result = await this.client.abstract.fetchAll({url: ROUTES.GUILD + `${this.guild_id}/threads/active`, dataType: "thread"})
+                return result
             },
 
             fetch: async (id) => {
@@ -84,6 +83,10 @@ export class Channel {
                     const result = await this.client.api.get(baseRoute)
                     return result
                 }
+            },
+
+            get: (id) => {
+                return this.client.abstract.getType('channel').get(id)
             }
         }
     }

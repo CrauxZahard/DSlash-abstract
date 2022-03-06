@@ -16,6 +16,7 @@ export class Channel {
     }
 
     async delete() {
+        //this method can be used to close a private message too
         await this.client.api.delete(ROUTES.CHANNEL + this.id)
         return true
     }
@@ -89,6 +90,32 @@ export class Channel {
 
             get: (id) => {
                 return this.client.abstract.getType('channel').get(id)
+            }
+        }
+    }
+
+
+    get messages() {
+        return {
+            delete: async (id) => {
+                await this.client.api.delete(ROUTES.CHANNEL + `${this.id}/messages/${id}`)
+                return true
+            },
+            bulkDelete: async (amount = 5) => {
+                let arrayOfMessageId;
+                const result = await this.client.api.get(ROUTES.CHANNEL + `${this.id}/messages?limit=${amount}`)
+                arrayOfMessageId = result.map(message => message.id)
+                delete result
+                await this.client.api.post(ROUTES.CHANNEL + `${this.id}/messages/bulk-delete`, arrayOfMessageId)
+                return true
+            },
+            fetch: async (id) => {
+
+            },
+            get: (id) => {
+                return this.client.abstract.getType("message")
+                .filter(msg => msg.channel_id === this.id)
+                .get(IDBObjectStore)
             }
         }
     }

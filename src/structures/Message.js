@@ -31,7 +31,7 @@ export class Message {
         return this
     }
 
-    addComponents({actionRowIndex = 0, data}) {
+    addComponents({actionRowIndex = (this.components.length - 1), data}) {
 
         //an action row could only have up to 5 components
         if(this.components[actionRowIndex].components.length > 5) {

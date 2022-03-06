@@ -158,13 +158,17 @@ export class Abstract extends Map {
   }
 
   getType(type) {
-    const copyOfThis = new Abstract(this.client, this.routes);
-    const filteredData = [...this].filter(t => t[1 /*accessing the data*/]._type === type).map(this.transform)
+    const copyOfThis = new Abstract(this.client, this.routes)
+    const filteredData = [...this].filter(t => t[1 /*accessing the data*/]._type === type)
+    .map(data => [ data[0], this.transform(data[1]) ])
     copyOfThis.setAll(filteredData)
     return copyOfThis
   }
 
   setAll(arrayOfData) {
+    /*
+      arrayOfData ex: [["key", "value"], ["k", "v"], ["foo", "bar"]]
+    */
     arrayOfData.forEach(arr => this.set(arr[0], arr[1]))
     return this
   }
@@ -177,7 +181,7 @@ export class Abstract extends Map {
     return super.get(data.id)
   }
 
-  //transform all data into an array
+  //map this data with the guven function
   map(func) {
     return [...this].map(func)
   }
